@@ -1,43 +1,133 @@
 import math
+import random
 
 class Position:
     """ Represents a character's position in 3D space. """
     
-    def __init__(self, x, y, z=0, grid_size=5000):
-        self.x = max(0, min(x, grid_size))
-        self.y = max(0, min(y, grid_size))
+    def __init__(self, x, y, z=0):
+        self.x = max(0, x)# Ensure within grid bounds
+        self.y = max(0, y) # Ensure within grid bounds
         self.z = max(0, z)  # Ensure ground-level or higher
-        self.grid_size = grid_size
 
-    def distance_to(self, other, squared=False):
-        """ Calculates the 3D distance to another position. Uses squared distance if specified. """
-        dx, dy, dz = self.x - other.x, self.y - other.y, self.z - other.z
-        dist_sq = dx ** 2 + dy ** 2 + dz ** 2
-        return dist_sq if squared else math.sqrt(dist_sq)
+    def move_towards(self, target, speed, weapon_range):
+        """Move towards another entity by a given step size"""
+        # Compute the vector difference
+        dx = target.x - self.x
+        dy = target.y - self.y
+        dz = target.z - self.z
+        
+        # Compute the distance to the target
+        distance = math.sqrt(dx**2 + dy**2 + dz**2)
+        
+        if distance <= weapon_range:
+            return
+        
+        # Normalize direction
+        dx /= distance
+        dy /= distance
+        dz /= distance
 
-    def move_towards(self, target_position, speed):
-        """ Moves towards a target position using available speed while staying within grid bounds. """
-        total_distance = self.distance_to(target_position)
-        if total_distance == 0 or speed == 0:
-            return  # No movement needed
+        # Move by speed
+        self.x += dx * speed
+        self.y += dy * speed
+        self.z += dz * speed
+        
+        # Round the new position
+        self.x = round(self.x)
+        self.y = round(self.y)
+        self.z = round(self.z)
 
-        move_ratio = min(speed / total_distance, 1)
-        self.x = max(0, min(self.grid_size, self.x + (target_position.x - self.x) * move_ratio))
-        self.y = max(0, min(self.grid_size, self.y + (target_position.y - self.y) * move_ratio))
-        self.z = max(0, self.z + (target_position.z - self.z) * move_ratio)  # Z is only restricted to ground level
+    def move_away(self, target, speed, weapon_range):
+        """Move away another entity by a given step size"""
+        # Compute the vector difference
+        dx = self.x - target.x
+        dy = self.y - target.y
+        dz = self.z - target.z
+        
+        # Compute the distance to the target
+        distance = math.sqrt(dx**2 + dy**2 + dz**2)
+        
+        if distance <= weapon_range:
+            return
+        
+        # Normalize direction
+        dx /= distance
+        dy /= distance
+        dz /= distance
 
-    def move_away(self, target_position, speed, max_range):
-        """ Moves directly away from a target while ensuring max distance is respected. """
-        current_distance = self.distance_to(target_position)
-        if current_distance >= max_range:
-            return  # Already at max distance
+        # Move by speed
+        self.x += dx * speed
+        self.y += dy * speed
+        self.z += dz * speed
+        
+        # Round the new position
+        self.x = round(self.x)
+        self.y = round(self.y)
+        self.z = round(self.z)
+        
+def initialize_positions(party, enemies):
+    """Initializes positions for entities in both party and enemies only once."""
+    
+    def distance(pos1, pos2):
+        """Calculate Euclidean distance between two positions."""
+        return math.sqrt((pos1.x - pos2.x) ** 2 + 
+                         (pos1.y - pos2.y) ** 2 + 
+                         (pos1.z - pos2.z) ** 2)
+    
+    def generate_nearby_position(reference_points, min_dist, max_dist):
+        """Generates a position near at least one reference point within the given range."""
+        while True:
+            ref_point = random.choice(reference_points)
+            r = random.uniform(min_dist, max_dist)
+            theta = random.uniform(0, 2 * math.pi)
+            phi = random.uniform(0, math.pi)
 
-        dx, dy, dz = self.x - target_position.x, self.y - target_position.y, self.z - target_position.z
-        total_move = math.sqrt(dx ** 2 + dy ** 2 + dz ** 2)
-        if total_move == 0:
-            return  # Prevent division by zero
+            x = ref_point.x + r * math.sin(phi) * math.cos(theta)
+            y = ref_point.y + r * math.sin(phi) * math.sin(theta)
+            z = ref_point.z + r * math.cos(phi)
 
-        move_ratio = min(speed / total_move, 1)
-        self.x = max(0, min(self.grid_size, self.x + dx * move_ratio))
-        self.y = max(0, min(self.grid_size, self.y + dy * move_ratio))
-        self.z = max(0, self.z + dz * move_ratio)
+            new_position = Position(round(x), round(y), round(z))
+            
+            if all(distance(new_position, p) >= min_dist for p in reference_points):
+                return new_position
+    
+    # Initialize base positions for both parties
+    party_positions = [Position(random.randint(0, 100), random.randint(0, 100), random.randint(0, 100))]
+    enemy_positions = [Position(random.randint(200, 300), random.randint(200, 300), random.randint(200, 300))]
+    
+    # Assign positions to party members
+    for member in party[1:]:  # First member already has a position
+        party_positions.append(generate_nearby_position(party_positions, 25, 50))
+    
+    # Assign positions to enemies
+    for enemy in enemies[1:]:  # First enemy already has a position
+        enemy_positions.append(generate_nearby_position(enemy_positions, 25, 50))
+    
+    # Ensure opposing camps are at least 50 feet apart
+    for idx in range(len(enemy_positions)):
+        while any(distance(enemy_positions[idx], p) < 50 or distance(enemy_positions[idx], p) > 100 for p in party_positions):
+            enemy_positions[idx] = generate_nearby_position(enemy_positions, 50, 100)
+    
+    # Assign positions to entities
+    for i, member in enumerate(party):
+        member.position = party_positions[i]
+    
+    for i, enemy in enumerate(enemies):
+        enemy.position = enemy_positions[i]
+
+
+def move_entities(camp_a, camp_b, speed=5):
+    """Moves entities using their existing movement functions."""
+    
+    # Example movement logic:
+    # Camp A moves toward Camp B
+    for entity in camp_a:
+        target = random.choice(camp_b)  # Pick a random target from Camp B
+        entity.position.move_towards(target.position, speed, 5)
+
+    # Camp B moves away from Camp A
+    for entity in camp_b:
+        target = random.choice(camp_a)  # Pick a random entity from Camp A
+        entity.position.move_away(target.position, speed, 5)
+
+    return camp_a, camp_b

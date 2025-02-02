@@ -1,10 +1,16 @@
+import random
+import math
+from mechanics.position import Position  # Import Position class from your file
+import matplotlib.pyplot as plt
 from characters.party_member import PartyMember
 from characters.enemy import Enemy
 from mechanics.combat import assign_default_actions
 from simulation.bulk_runner import analyze_combat_results, run_bulk_simulations
 import pandas as pd
 from utils.visualization import generate_combat_report
-from mechanics.position import assign_random_positions
+from mechanics.position import initialize_positions, move_entities
+
+
 
 # Define weapons as a dictionary for easy access
 WEAPONS = {
@@ -31,29 +37,17 @@ enemies = [
           3, [], [], "Large", WEAPONS["claws"], "melee", False, 1, 60)
 ]
 
-# Assign actions & resistances
-for entity in party + enemies:
-    assign_default_actions(entity)
+# Generate initial positions
+initialize_positions(party, enemies)
 
-enemies[0].resistances = ["slashing"]  # Orc resists slashing
-enemies[1].resistances = ["piercing"]  # Wyvern resists arrows
+print("Initial Camp A:", [(p.position.x, p.position.y, p.position.z) for p in party])
+print("Initial Camp B:", [(p.position.x, p.position.y, p.position.z) for p in enemies])
 
-# Assign positions
-assign_random_positions(party, "party")
-assign_random_positions(enemies, "enemy")
+# Move entities using their movement methods
+move_entities(party, enemies, speed=30)
 
-# Run Simulation
-combat_results = run_bulk_simulations(party + enemies, num_simulations=10)
+print("\nAfter Movement:")
+print("Updated Camp A:", [(p.position.x, p.position.y, p.position.z) for p in party])
+print("Updated Camp B:", [(p.position.x, p.position.y, p.position.z) for p in enemies])
 
-# Ensure combat_results is valid
-def validate_results(results):
-    if not isinstance(results, pd.DataFrame) or results.empty:
-        raise ValueError("Simulation returned invalid or empty results.")
-    return results
 
-combat_results = validate_results(combat_results)
-
-# Run statistical analysis
-analysis_results = analyze_combat_results(combat_results)
-
-generate_combat_report(analysis_results, "combat_simulation_report.pdf")
