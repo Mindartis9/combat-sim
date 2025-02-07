@@ -2,9 +2,11 @@ from copy import deepcopy
 import numpy as np
 import pandas as pd
 import scipy.stats as stats
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import LinearRegression, LogisticRegression
 from mechanics.combat import simulate_combat
 import matplotlib.pyplot as plt
+import statsmodels.api as sm
+from statsmodels.stats.outliers_influence import variance_inflation_factor
 
 def run_bulk_simulations(entities, num_simulations, debug=False):
     """Runs multiple combat simulations and aggregates statistics."""
@@ -67,7 +69,6 @@ def compute_survivability_statistics(df):
     return {
         "Average Turns Before Death": df["turns_survived"].mean(),
         "Survival Rate Per Round": df.get("survival_per_round", pd.Series(dtype=float)).apply(np.mean).mean(),
-        "HP Remaining at Death Distribution": df.get("hp_remaining_at_death", pd.Series(dtype=float)).describe(),
         "Death Turn Variance": df["turns_survived"].var(),
     }
 
@@ -176,32 +177,50 @@ def monte_carlo_analysis(df, num_simulations=10):
         "95% Confidence Interval": (round(ci_lower * 100, 2), round(ci_upper * 100, 2)),
     }
 
-
 def regression_analysis(df):
-    """Performs regression analysis to predict combat success."""
-    if "winner" not in df.columns:
-        return None
+    """Performs logistic regression analysis to predict combat success."""
     
+    if "winner" not in df.columns:
+        return {"Error": "Missing required column: 'winner'."}
+
     df = df.copy()
     df["win_binary"] = (df["winner"] == "party").astype(int)
-    
-    predictors = [col for col in df.columns if "damage_dealt" in col or "turns_survived" in col or "initiative" in col]
 
-    predictors = [p for p in predictors if p in df.columns]
-    
+    # Define predictors explicitly
+    predictors = ["turns_survived", "damage_dealt", "initiative"]
+    predictors = [p for p in predictors if p in df.columns]  # Only keep existing columns
+
     if not predictors:
         return {"Error": f"No valid predictors found. Available columns: {df.columns.tolist()}"}
 
-    
-    X = df[predictors].fillna(0)
-    y = df["win_binary"]
-    
-    model = LinearRegression()
-    model.fit(X, y)
-    
-    coefficients = dict(zip(predictors, model.coef_))
-    return {
-        "Regression Coefficients": coefficients,
-        "Intercept": model.intercept_,
-    }
+    # Prepare data
+    X = df[predictors].dropna()
+    y = df.loc[X.index, "win_binary"]
 
+    # Check for multicollinearity
+    X_with_const = sm.add_constant(X)
+    vif_data = pd.DataFrame({
+        "Variable": X_with_const.columns,
+        "VIF": [variance_inflation_factor(X_with_const.values, i) for i in range(X_with_const.shape[1])]
+    })
+    
+    # Fit logistic regression
+    logit_model = sm.Logit(y, X_with_const).fit(disp=0)  # Suppress output
+    results_summary = logit_model.summary2().tables[1]  # Extract coefficients and p-values
+    
+    # Extract key results
+    coefficients = results_summary["Coef."]
+    p_values = results_summary["P>|z|"]
+    
+    # Compute McFadden's Pseudo R²
+    null_model = sm.Logit(y, np.ones_like(y)).fit(disp=0)  # Null model with only intercept
+    pseudo_r2 = 1 - (logit_model.llf / null_model.llf)
+    
+    return {
+        "Regression Coefficients": coefficients.to_dict(),
+        "P-values": p_values.to_dict(),
+        "Intercept": logit_model.params["const"],
+        "Pseudo R²": pseudo_r2,
+        "VIF Scores": vif_data.set_index("Variable")["VIF"].to_dict(),
+        "Model Summary": str(logit_model.summary())  # Optional: Full summary
+    }

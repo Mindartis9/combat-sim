@@ -83,7 +83,6 @@ def simulate_combat(entities):
         "damage_dealt": {e.name: 0 for e in entities},
         "damage_per_round": {e.name: [] for e in entities},
         "turns_survived": {e.name: 0 for e in entities},
-        "hp_remaining_at_death": {},
         "actions_used": {e.name: {} for e in entities},
         "reactions_used": {e.name: {} for e in entities},
         "rounds": 0,

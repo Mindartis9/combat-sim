@@ -1,0 +1,11 @@
+- Make uniform the advantage/disadvantage system
+
+-Redo which stats are tracked and where, as well as reading them later
+
+-Redo the basic actions available to all characters
+	- Weights assigned per character
+	- Redo the hide mechanic to be simpler 
+
+-Redo entirely the attack action and the damage calculation
+
+-

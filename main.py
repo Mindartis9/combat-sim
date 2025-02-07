@@ -4,7 +4,7 @@ from mechanics.combat import assign_default_actions
 from simulation.bulk_runner import analyze_combat_results, run_bulk_simulations
 import pandas as pd
 from utils.visualization import generate_combat_report
-from mechanics.position import assign_random_positions
+from mechanics.position import initialize_positions
 
 # Define weapons as a dictionary for easy access
 WEAPONS = {
@@ -39,8 +39,7 @@ enemies[0].resistances = ["slashing"]  # Orc resists slashing
 enemies[1].resistances = ["piercing"]  # Wyvern resists arrows
 
 # Assign positions
-assign_random_positions(party, "party")
-assign_random_positions(enemies, "enemy")
+initialize_positions(party, enemies)
 
 # Run Simulation
 combat_results = run_bulk_simulations(party + enemies, num_simulations=10)
