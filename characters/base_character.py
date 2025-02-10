@@ -17,6 +17,8 @@ class Character:
         self.combat_style = combat_style  # "melee" or "ranged"
         self.flying_speed = flying_speed  # Default to 0 if ground-bound
         self.is_flying = False  # Default ground state
+        self.attack_advantage = 0  # Tracks if attacks made by this character have advantage/disadvantage
+        self.defense_advantage = 0  # Tracks if attacks against this character have advantage/disadvantage
         
         # Status Tracking
         self.conditions = set()

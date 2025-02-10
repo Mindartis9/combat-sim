@@ -71,8 +71,6 @@ def execute_turn(entity, entities, stats):
     elif action["name"] == "Dash":
         dash(entity, stats)
 
-    print(f"DEBUG: {entity.name} performed {action['name']}")
-
 def simulate_combat(entities):
     """ Runs combat simulation until one side is eliminated and collects statistical data. """
     from characters.party_member import PartyMember  
@@ -117,11 +115,18 @@ def attack(attacker, target, stats):
     num_attacks = attacker.get_attack_count() if hasattr(attacker, "get_attack_count") else 1
 
     for _ in range(num_attacks):
-        # **Fix: Check if target has `is_hidden` before using it**
-        target_hidden = getattr(target, "is_hidden", False)
-                
-        attack_roll = (min(random.randint(1, 20), random.randint(1, 20)) if target_hidden
-               else random.randint(1, 20)) + ability_mod + proficiency_bonus
+              
+        # Determine attack roll based on advantage/disadvantage system
+        advantage_score = attacker.attack_advantage + target.defense_advantage
+
+        if advantage_score > 0:
+            attack_roll = max(random.randint(1, 20), random.randint(1, 20))  # Advantage
+        elif advantage_score < 0:
+            attack_roll = min(random.randint(1, 20), random.randint(1, 20))  # Disadvantage
+        else:
+            attack_roll = random.randint(1, 20)  # Normal roll
+
+        attack_roll += ability_mod + proficiency_bonus
 
         hit = attack_roll >= target.ac
         critical_hit = attack_roll == 20
@@ -174,7 +179,7 @@ def assign_default_actions(character):
     character.actions = [
         {"name": "Attack", "mechanic": attack, "parameters": {}, "weight": 10, "target_required": True},
         {"name": "Dodge", "mechanic": dodge, "parameters": {}, "weight": 1},
-        {"name": "Hide", "mechanic": hide, "parameters": {"dc": 15}, "weight": 1},
+        {"name": "Hide", "mechanic": hide, "parameters": {"dc": 25}, "weight": 1},
         {"name": "Disengage", "mechanic": disengage, "parameters": {}, "weight": 1},
         {"name": "Dash", "mechanic": dash, "parameters": {}, "weight": 1},
     ]

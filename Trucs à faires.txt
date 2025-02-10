@@ -1,4 +1,8 @@
 - Make uniform the advantage/disadvantage system
+	- Every character has a defined characteristic that gives creatures advantage over them, and a characteristic on wether they have advantage overall.
+	There is also the same 2 characteristics for disadvantage. This is represented by an int value that goes higher or lower. 
+
+
 
 -Redo which stats are tracked and where, as well as reading them later
 
