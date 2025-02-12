@@ -1,8 +1,10 @@
-- Make uniform the advantage/disadvantage system
+- Make uniform the advantage/disadvantage system - DONE
 	- Every character has a defined characteristic that gives creatures advantage over them, and a characteristic on wether they have advantage overall.
 	There is also the same 2 characteristics for disadvantage. This is represented by an int value that goes higher or lower. 
 
+- Need to change every mechanic that interacts with advantage and disadvantage.
 
+- Need to integrate a time based mechanic for each feature for how long they last. - DONE
 
 -Redo which stats are tracked and where, as well as reading them later
 

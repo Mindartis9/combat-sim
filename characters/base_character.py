@@ -30,6 +30,8 @@ class Character:
         self.is_surprised = False
         self.dash_active = False
         self.can_be_opportunity_attacked = True
+        self.dicoTemporalite = {'dodge':[0,0,-1]}
+
         
         # **Fix: Initialize self.reactions before assignment**
         self.reactions = {}  

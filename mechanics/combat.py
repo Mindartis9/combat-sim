@@ -28,7 +28,7 @@ def execute_turn(entity, entities, stats):
     if entity.hitpoints <= 0:
         return  # Skip dead entities
 
-    
+    checkTime(entity)
     stats["turns_survived"][entity.name] += 1
     entity.reset_reaction()
     
@@ -71,6 +71,7 @@ def execute_turn(entity, entities, stats):
     elif action["name"] == "Dash":
         dash(entity, stats)
 
+    checkTime(entity)
 def simulate_combat(entities):
     """ Runs combat simulation until one side is eliminated and collects statistical data. """
     from characters.party_member import PartyMember  
@@ -136,16 +137,18 @@ def attack(attacker, target, stats):
         
 def dodge(character, stats):
     """ Performs the Dodge action, imposing disadvantage on attacks. """
-    character.is_dodging = True
+    character.defense_advantage += -1
+    character.dicoTemporalite['dodge'][0] = 2
 
 def hide(character, stats, hide_dc):
     """ Performs the Hide action based on a Dexterity (Stealth) check. """
     stealth_roll = random.randint(1, 20) + character.calculate_modifier("DEX")
-    character.is_hidden = stealth_roll >= hide_dc
+    if stealth_roll >= hide_dc:
+        character.defense_advantage += -1
 
 def dash(character, stats):
     """ Performs the Dash action, doubling movement speed. """
-    character.speed *= 2
+    character.speed += character.speed
     character.dash_active = True
 
 def disengage(character, stats):
@@ -230,3 +233,14 @@ def apply_damage(target, damage, damage_type, stats, attacker_name):
     stats["damage_per_round"].setdefault(attacker_name, []).append(damage)
 
     print(f"DEBUG: {attacker_name} dealt {damage} damage to {target.name}. Remaining HP: {target.hitpoints}")
+
+def checkTime(characters):
+    
+    for mecha in characters.dicoTemporalite:
+        if mecha[0] > 0:
+            mecha[0] -= 1
+
+        if mecha[0] == 0:
+            characters.attack_advantage -= mecha[1]
+            characters.defense_advantage -= mecha[2]
+    
