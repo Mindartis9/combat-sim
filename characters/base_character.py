@@ -11,6 +11,7 @@ class Character:
         self.ac = ac
         self.initiative = initiative
         self.speed = speed
+        self.base_speed = speed
         self.hitpoints = hitpoints
         self.size = size
         self.weapon = weapon
@@ -28,9 +29,8 @@ class Character:
         
         # Combat Mechanics
         self.is_surprised = False
-        self.dash_active = False
         self.can_be_opportunity_attacked = True
-        self.dicoTemporalite = {'dodge':[0,0,-1]}
+        self.dicoTemporalite = {}
 
         
         # **Fix: Initialize self.reactions before assignment**
@@ -42,10 +42,6 @@ class Character:
         """Determines if this character can take a reaction this round."""
         return not self.has_used_reaction and not self.is_surprised 
     
-    def reset_reaction(self):
-        """Resets reaction availability at the start of the character's turn."""
-        self.has_used_reaction = False
-        
     def start_falling(self):
         """Starts falling if airborne without flying speed."""
         if self.position.z > 0 and self.flying_speed == 0:

@@ -2,7 +2,7 @@
 	- Every character has a defined characteristic that gives creatures advantage over them, and a characteristic on wether they have advantage overall.
 	There is also the same 2 characteristics for disadvantage. This is represented by an int value that goes higher or lower. 
 
-- Need to change every mechanic that interacts with advantage and disadvantage.
+- Need to change every mechanic that interacts with advantage and disadvantage. DONE ?
 
 - Need to integrate a time based mechanic for each feature for how long they last. - DONE
 
@@ -14,4 +14,4 @@
 
 -Redo entirely the attack action and the damage calculation
 
--
+-Integrate flying speed in Position

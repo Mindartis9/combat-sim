@@ -30,7 +30,7 @@ def execute_turn(entity, entities, stats):
 
     checkTime(entity)
     stats["turns_survived"][entity.name] += 1
-    entity.reset_reaction()
+    
     
     if "falling" in entity.conditions:
         entity.apply_fall_damage(stats)
@@ -43,7 +43,7 @@ def execute_turn(entity, entities, stats):
     else:
         valid_targets = []
 
-    if valid_targets:
+    if valid_targets != []:
         target = random.choice(valid_targets)
     else:
         return  # No valid target, skip action
@@ -64,14 +64,15 @@ def execute_turn(entity, entities, stats):
         attack(entity, target, stats)
     elif action["name"] == "Dodge":
         dodge(entity, stats)
-    elif action["name"] == "Hide":
-        hide(entity, stats, action["parameters"].get("dc", 15))
     elif action["name"] == "Disengage":
         disengage(entity, stats)
     elif action["name"] == "Dash":
         dash(entity, stats)
 
+    entity.has_used_reaction = False  # Reset reaction usage
     checkTime(entity)
+
+
 def simulate_combat(entities):
     """ Runs combat simulation until one side is eliminated and collects statistical data. """
     from characters.party_member import PartyMember  
@@ -137,36 +138,32 @@ def attack(attacker, target, stats):
         
 def dodge(character, stats):
     """ Performs the Dodge action, imposing disadvantage on attacks. """
+    if 'dodge' not in character.dicoTemporalite:
+        character.dicoTemporalite['dodge':[0,0,-1]]
     character.defense_advantage += -1
     character.dicoTemporalite['dodge'][0] = 2
 
-def hide(character, stats, hide_dc):
-    """ Performs the Hide action based on a Dexterity (Stealth) check. """
-    stealth_roll = random.randint(1, 20) + character.calculate_modifier("DEX")
-    if stealth_roll >= hide_dc:
-        character.defense_advantage += -1
-
 def dash(character, stats):
     """ Performs the Dash action, doubling movement speed. """
-    character.speed += character.speed
-    character.dash_active = True
+    if 'dash' not in character.dicoTemporalite:
+        character.dicoTemporalite['dash':[0,0,0]]
+    character.speed += character.base_speed
+    character.dicoTemporalite['dash'][0] = 1
 
 def disengage(character, stats):
     """ Performs the Disengage action, avoiding opportunity attacks. """
+    if 'disengage' not in character.dicoTemporalite:
+        character.dicoTemporalite['disengage':[0,0,0]]    
     character.can_be_opportunity_attacked = False
+    character.dicoTemporalite['disengage'][0] = 1
 
 def opportunity_attack(attacker, target, stats):
     """Executes an opportunity attack when a target moves out of melee range."""
     if attacker.combat_style != "melee" or attacker.has_used_reaction:
         return  # Only melee attackers can make opportunity attacks and must have a reaction available
 
-    attack_roll = random.randint(1, 20) + attacker.calculate_modifier(attacker.weapon["modifier"]) + attacker.proficiency_bonus
-    hit = attack_roll >= target.ac
-    critical_hit = attack_roll == 20
-    damage = calculate_damage(attacker.weapon["damage_dice"]) * (2 if critical_hit else 1) if hit else 0
-
-    apply_damage(target, damage, attacker.weapon["damage_type"], stats, attacker.name)
-
+    attack(attacker, target, stats)
+    
     # Mark reaction as used
     attacker.has_used_reaction = True
 
@@ -182,7 +179,6 @@ def assign_default_actions(character):
     character.actions = [
         {"name": "Attack", "mechanic": attack, "parameters": {}, "weight": 10, "target_required": True},
         {"name": "Dodge", "mechanic": dodge, "parameters": {}, "weight": 1},
-        {"name": "Hide", "mechanic": hide, "parameters": {"dc": 25}, "weight": 1},
         {"name": "Disengage", "mechanic": disengage, "parameters": {}, "weight": 1},
         {"name": "Dash", "mechanic": dash, "parameters": {}, "weight": 1},
     ]
@@ -243,4 +239,10 @@ def checkTime(characters):
         if mecha[0] == 0:
             characters.attack_advantage -= mecha[1]
             characters.defense_advantage -= mecha[2]
+        
+        if (mecha == 'dash' and mecha[0] == 0):
+            characters.speed -= characters.base_speed
+            
+        if (mecha == 'disengage' and mecha[0] == 0):
+            characters.can_be_opportunity_attacked = True
     
