@@ -1,6 +1,7 @@
 from __future__ import annotations  
 import random
 from mechanics.position import Position
+from mechanics.position import closest_enemy, distance
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -45,20 +46,29 @@ def execute_turn(entity, entities, stats):
 
     prev_position = Position(entity.position.x, entity.position.y, entity.position.z)
     process_reactions(entity, entities, stats, prev_position)
+    
+    if isinstance(entity, PartyMember):
+        if entity.combat_style == "melee":
+            target = closest_enemy(entity, valid_targets)
+            entity.move_towards(entity, target)
+        else:
+            target = closest_enemy(entity, valid_targets)
+            entity.move_away(entity, target)
+    elif isinstance(entity, Enemy):
+        if entity.combat_style == "melee":
+            target = closest_enemy(entity, valid_targets)
+            entity.move_towards(entity, target)
+        else:
+            target = closest_enemy(entity, valid_targets)
+            entity.move_away(entity, target)
+        
     action = random.choices(entity.actions, weights=[a.get("weight", 1) for a in entity.actions], k=1)[0]
-
-    # Ensure actions are properly tracked
-    if entity.name not in stats["actions_used"]:
-        stats["actions_used"][entity.name] = {}
-    if action["name"] not in stats["actions_used"][entity.name]:
-        stats["actions_used"][entity.name][action["name"]] = 0
-    stats["actions_used"][entity.name][action["name"]] += 1
-
+    
     # Perform action
+    triggerstop = False
     while triggerstop == False:
         triggerstop = True
         if action["name"] == "Attack" & valid_targets != []:
-            target = random.choice(valid_targets)
             attack(entity, target, stats)
         elif action["name"] == "Dodge":
             dodge(entity, stats)
@@ -70,7 +80,13 @@ def execute_turn(entity, entities, stats):
             action = random.choices(entity.actions, weights=[a.get("weight", 1) for a in entity.actions], k=1)[0]
             triggerstop = False
 
-
+    # Ensure actions are properly tracked
+    if entity.name not in stats["actions_used"]:
+        stats["actions_used"][entity.name] = {}
+    if action["name"] not in stats["actions_used"][entity.name]:
+        stats["actions_used"][entity.name][action["name"]] = 0
+    stats["actions_used"][entity.name][action["name"]] += 1
+    
     entity.has_used_reaction = False  # Reset reaction usage
     checkTime(entity)
 

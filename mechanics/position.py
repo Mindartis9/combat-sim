@@ -65,15 +65,20 @@ class Position:
         self.y = round(self.y)
         self.z = round(self.z)
         
+def distance(pos1, pos2):
+    """Calculate Euclidean distance between two positions."""
+    return math.sqrt((pos1.x - pos2.x) ** 2 + 
+                     (pos1.y - pos2.y) ** 2 + 
+                     (pos1.z - pos2.z) ** 2)
+
+def closest_enemy(entity, enemy_camp):
+    """Find the closest enemy to the given entity."""
+    return min(enemy_camp, key=lambda enemy: distance(entity.position, enemy.position))
+    
+        
 def initialize_positions(party, enemies):
     """Initializes positions for entities in both party and enemies only once."""
-    
-    def distance(pos1, pos2):
-        """Calculate Euclidean distance between two positions."""
-        return math.sqrt((pos1.x - pos2.x) ** 2 + 
-                         (pos1.y - pos2.y) ** 2 + 
-                         (pos1.z - pos2.z) ** 2)
-    
+  
     def generate_nearby_position(reference_points, min_dist, max_dist):
         """Generates a position near at least one reference point within the given range."""
         while True:
