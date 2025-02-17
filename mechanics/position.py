@@ -116,18 +116,18 @@ def initialize_positions(party, enemies):
         enemy.position = enemy_positions[i]
 
 
-def move_entities(camp_a, camp_b, speed=5):
+def move_entities(camp_a, camp_b):
     """Moves entities using their existing movement functions."""
     
     # Example movement logic:
     # Camp A moves toward Camp B
     for entity in camp_a:
         target = random.choice(camp_b)  # Pick a random target from Camp B
-        entity.position.move_towards(target.position, speed, 5)
+        entity.position.move_towards(target.position, entity.speed, 5)
 
     # Camp B moves away from Camp A
     for entity in camp_b:
         target = random.choice(camp_a)  # Pick a random entity from Camp A
-        entity.position.move_away(target.position, speed, 5)
+        entity.position.move_away(target.position, entity.speed, 5)
 
     return camp_a, camp_b

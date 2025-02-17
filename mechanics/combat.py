@@ -25,28 +25,23 @@ def determine_surprise(entities, surprised_names):
     
 def execute_turn(entity, entities, stats):
     """Executes a single turn for an entity, ensuring valid targets."""
+    
+    if "falling" in entity.conditions:
+        entity.apply_fall_damage(stats)
+        return  # Falling takes priority
+    
     if entity.hitpoints <= 0:
         return  # Skip dead entities
 
     checkTime(entity)
     stats["turns_survived"][entity.name] += 1
-    
-    
-    if "falling" in entity.conditions:
-        entity.apply_fall_damage(stats)
-        return  # Falling takes priority
-        
+            
     if isinstance(entity, PartyMember):
         valid_targets = [e for e in entities if isinstance(e, Enemy) and e.hitpoints > 0]
     elif isinstance(entity, Enemy):
         valid_targets = [e for e in entities if isinstance(e, PartyMember) and e.hitpoints > 0]
     else:
         valid_targets = []
-
-    if valid_targets != []:
-        target = random.choice(valid_targets)
-    else:
-        return  # No valid target, skip action
 
     prev_position = Position(entity.position.x, entity.position.y, entity.position.z)
     process_reactions(entity, entities, stats, prev_position)
@@ -60,14 +55,21 @@ def execute_turn(entity, entities, stats):
     stats["actions_used"][entity.name][action["name"]] += 1
 
     # Perform action
-    if action["name"] == "Attack":
-        attack(entity, target, stats)
-    elif action["name"] == "Dodge":
-        dodge(entity, stats)
-    elif action["name"] == "Disengage":
-        disengage(entity, stats)
-    elif action["name"] == "Dash":
-        dash(entity, stats)
+    while triggerstop == False:
+        triggerstop = True
+        if action["name"] == "Attack" & valid_targets != []:
+            target = random.choice(valid_targets)
+            attack(entity, target, stats)
+        elif action["name"] == "Dodge":
+            dodge(entity, stats)
+        elif action["name"] == "Disengage":
+            disengage(entity, stats)
+        elif action["name"] == "Dash":
+            dash(entity, stats)
+        else:
+            action = random.choices(entity.actions, weights=[a.get("weight", 1) for a in entity.actions], k=1)[0]
+            triggerstop = False
+
 
     entity.has_used_reaction = False  # Reset reaction usage
     checkTime(entity)
