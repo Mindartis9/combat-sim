@@ -49,15 +49,15 @@ def execute_turn(entity, entities, stats):
     
     
     if isinstance(entity, PartyMember) & valid_targets != []:
-        if entity.combat_style == "melee":
+        if entity.combat_style == "melee" and entity.position.distance_to(target.position) > entity.weapon["range"]:
             target = closest_enemy(entity, valid_targets)
             entity.move_towards(entity, target)
-        else:
+        elif entity.combat_style == "ranged" and entity.position.distance_to(target.position) < entity.weapon["range"]:
             target = closest_enemy(entity, valid_targets)
             entity.move_away(entity, target)
         has_moved = True
     elif isinstance(entity, Enemy) & valid_targets != []:
-        if entity.combat_style == "melee":
+        if entity.combat_style == "melee" and entity.position.distance_to(target.position) > entity.weapon["range"]:
             target = closest_enemy(entity, valid_targets)
             entity.move_towards(entity, target)
         else:

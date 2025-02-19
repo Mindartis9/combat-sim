@@ -57,7 +57,7 @@ class Character:
         self.fall_distance = min(self.fall_distance + 500, self.position.z)
         if self.position.z - self.fall_distance <= 0:
             fall_damage = (self.fall_distance // 10) * random.randint(1, 6)  # 1d6 per 10 ft
-            self.hitpoints = max(self.hitpoints - fall_damage, 0)
+            self._current = max(self.hitpoints_current - fall_damage, 0)
             stats["damage_dealt"].setdefault(self.name, 0)
             stats["damage_dealt"][self.name] += fall_damage
             self.conditions.discard("falling")

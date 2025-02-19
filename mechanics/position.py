@@ -9,7 +9,7 @@ class Position:
         self.y = max(0, y) # Ensure within grid bounds
         self.z = max(0, z)  # Ensure ground-level or higher
 
-    def move_towards(self, target, speed, weapon_range):
+    def move_towards(self, target):
         """Move towards another entity by a given step size"""
         # Compute the vector difference
         dx = target.x - self.x
@@ -19,7 +19,7 @@ class Position:
         # Compute the distance to the target
         distance = math.sqrt(dx**2 + dy**2 + dz**2)
         
-        if distance <= weapon_range:
+        if distance <= self.weapon["range"]:
             return
         
         # Normalize direction
@@ -28,16 +28,16 @@ class Position:
         dz /= distance
 
         # Move by speed
-        self.x += dx * speed
-        self.y += dy * speed
-        self.z += dz * speed
+        self.x += dx * self.speed
+        self.y += dy * self.speed
+        self.z += dz * self.speed
         
         # Round the new position
         self.x = round(self.x)
         self.y = round(self.y)
         self.z = round(self.z)
 
-    def move_away(self, target, speed, weapon_range):
+    def move_away(self, target):
         """Move away another entity by a given step size"""
         # Compute the vector difference
         dx = self.x - target.x
@@ -47,7 +47,7 @@ class Position:
         # Compute the distance to the target
         distance = math.sqrt(dx**2 + dy**2 + dz**2)
         
-        if distance <= weapon_range:
+        if distance <= self.weapon["range"]:
             return
         
         # Normalize direction
@@ -56,9 +56,9 @@ class Position:
         dz /= distance
 
         # Move by speed
-        self.x += dx * speed
-        self.y += dy * speed
-        self.z += dz * speed
+        self.x += dx * self.speed
+        self.y += dy * self.speed
+        self.z += dz * self.speed
         
         # Round the new position
         self.x = round(self.x)

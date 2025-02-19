@@ -1,0 +1,28 @@
+def regression_analysis(df):
+    """Performs regression analysis to predict combat success."""
+    if "winner" not in df.columns:
+        return None
+    
+    df = df.copy()
+    df["win_binary"] = (df["winner"] == "party").astype(int)
+    
+    predictors = [col for col in df.columns if "damage_dealt" in col or "turns_survived" in col or "initiative" in col]
+
+    predictors = [p for p in predictors if p in df.columns]
+    
+    if not predictors:
+        return {"Error": f"No valid predictors found. Available columns: {df.columns.tolist()}"}
+
+    
+    X = df[predictors].fillna(0)
+    y = df["win_binary"]
+    
+    model = LinearRegression()
+    model.fit(X, y)
+    
+    coefficients = dict(zip(predictors, model.coef_))
+    return {
+        "Regression Coefficients": coefficients,
+        "Intercept": model.intercept_,
+    }
+
