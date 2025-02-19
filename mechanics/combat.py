@@ -45,7 +45,8 @@ def execute_turn(entity, entities, stats):
         valid_targets = []
 
     prev_position = Position(entity.position.x, entity.position.y, entity.position.z)
-    process_reactions(entity, entities, stats, prev_position)
+    has_moved = False
+    
     
     if isinstance(entity, PartyMember) & valid_targets != []:
         if entity.combat_style == "melee":
@@ -54,6 +55,7 @@ def execute_turn(entity, entities, stats):
         else:
             target = closest_enemy(entity, valid_targets)
             entity.move_away(entity, target)
+        has_moved = True
     elif isinstance(entity, Enemy) & valid_targets != []:
         if entity.combat_style == "melee":
             target = closest_enemy(entity, valid_targets)
@@ -61,7 +63,14 @@ def execute_turn(entity, entities, stats):
         else:
             target = closest_enemy(entity, valid_targets)
             entity.move_away(entity, target)
-        
+        has_moved = True
+    
+    if has_moved:
+        if isinstance(entity, PartyMember):    
+            process_reactions(entity, Enemy in entities, stats, prev_position)
+        else:
+            process_reactions(entity, PartyMember in entities, stats, prev_position)
+            
     action = random.choices(entity.actions, weights=[a.get("weight", 1) for a in entity.actions], k=1)[0]
     
     # Perform action
@@ -207,7 +216,7 @@ def process_reactions(moving_entity, entities, stats, previous_position):
         if entity == moving_entity or entity.hitpoints_current <= 0:
             continue
         
-        if entity.can_take_reaction() and entity.position.distance_to(previous_position) <= entity.weapon["range"]:
+        if entity.can_take_reaction() and distance(previous_position, entity.position) <= entity.weapon["range"] and distance(moving_entity.position, entity.position) > entity.weapon["range"]:
             if "Opportunity Attack" in entity.reactions:
                 entity.reactions["Opportunity Attack"](entity, moving_entity, stats)
                 entity.has_used_reaction = True
@@ -237,8 +246,6 @@ def apply_damage(target, damage, damage_type, stats, attacker_name):
 
     # Track damage per round
     stats["damage_per_round"].setdefault(attacker_name, []).append(damage)
-
-    print(f"DEBUG: {attacker_name} dealt {damage} damage to {target.name}. Remaining HP: {target.hitpoints_current}")
 
 def checkTime(characters):
     

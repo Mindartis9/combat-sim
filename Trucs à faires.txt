@@ -6,20 +6,20 @@
 
 - Need to integrate a time based mechanic for each feature for how long they last. - DONE
 
-__________
-
--Redo which stats are tracked and where, as well as reading them later - 5
-
 -Integrate Movement in the turn execution - DONE
 
--Redo the basic actions available to all characters - 3 (Already half done ?)
-	- Weights assigned per character
+-Redo the basic actions available to all characters - DONE
+	- Weights assigned per character - Unecessary
 	- Redo the hide mechanic to be simpler - DONE
 
 -Redo entirely the attack action and the damage calculation - DONE (Not necessary)
 
+- Redo Process Reactions - DONE
+
+- Redo Opportunity attacks - DONE
+
+_________________________________________
+
+-Redo which stats are tracked and where, as well as reading them later - 5
+
 -Integrate flying speed in Position -4
-
-- Redo Process Reactions
-
-- Redo Opportunity attacks
