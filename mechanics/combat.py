@@ -65,7 +65,7 @@ def execute_turn(entity, entities, stats):
             entity.move_away(entity, target)
         has_moved = True
     
-    if has_moved:
+    if has_moved: # Need to change this once other reactions are coded
         if isinstance(entity, PartyMember):    
             process_reactions(entity, Enemy in entities, stats, prev_position)
         else:

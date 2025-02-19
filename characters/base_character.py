@@ -32,9 +32,6 @@ class Character:
         self.is_surprised = False
         self.can_be_opportunity_attacked = True
         self.dicoTemporalite = {}
-
-        
-        # **Fix: Initialize self.reactions before assignment**
         self.reactions = {}  
         self.reactions["Opportunity Attack"] = opportunity_attack
         self.has_used_reaction = False
