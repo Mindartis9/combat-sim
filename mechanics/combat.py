@@ -31,30 +31,30 @@ def execute_turn(entity, entities, stats):
         entity.apply_fall_damage(stats)
         return  # Falling takes priority
     
-    if entity.hitpoints <= 0:
+    if entity.hitpoints_current <= 0:
         return  # Skip dead entities
 
     checkTime(entity)
     stats["turns_survived"][entity.name] += 1
             
     if isinstance(entity, PartyMember):
-        valid_targets = [e for e in entities if isinstance(e, Enemy) and e.hitpoints > 0]
+        valid_targets = [e for e in entities if isinstance(e, Enemy) and e.hitpoints_current > 0]
     elif isinstance(entity, Enemy):
-        valid_targets = [e for e in entities if isinstance(e, PartyMember) and e.hitpoints > 0]
+        valid_targets = [e for e in entities if isinstance(e, PartyMember) and e.hitpoints_current > 0]
     else:
         valid_targets = []
 
     prev_position = Position(entity.position.x, entity.position.y, entity.position.z)
     process_reactions(entity, entities, stats, prev_position)
     
-    if isinstance(entity, PartyMember):
+    if isinstance(entity, PartyMember) & valid_targets != []:
         if entity.combat_style == "melee":
             target = closest_enemy(entity, valid_targets)
             entity.move_towards(entity, target)
         else:
             target = closest_enemy(entity, valid_targets)
             entity.move_away(entity, target)
-    elif isinstance(entity, Enemy):
+    elif isinstance(entity, Enemy) & valid_targets != []:
         if entity.combat_style == "melee":
             target = closest_enemy(entity, valid_targets)
             entity.move_towards(entity, target)
@@ -108,7 +108,7 @@ def simulate_combat(entities):
     
     while True:
         stats["rounds"] += 1
-        entities = [e for e in entities if e.hitpoints > 0]  # Remove dead entities
+        entities = [e for e in entities if e.hitpoints_current > 0]  # Remove dead entities
 
         if not entities:
             break  # If no entities left, combat ends
@@ -116,8 +116,8 @@ def simulate_combat(entities):
         for entity in entities:
             execute_turn(entity, entities, stats)
 
-        alive_party = [e for e in entities if isinstance(e, PartyMember) and e.hitpoints > 0]
-        alive_enemies = [e for e in entities if isinstance(e, Enemy) and e.hitpoints > 0]
+        alive_party = [e for e in entities if isinstance(e, PartyMember) and e.hitpoints_current > 0]
+        alive_enemies = [e for e in entities if isinstance(e, Enemy) and e.hitpoints_current > 0]
 
         if not alive_party:
             return {**stats, "winner": "enemies"}
@@ -201,18 +201,10 @@ def assign_default_actions(character):
         {"name": "Dash", "mechanic": dash, "parameters": {}, "weight": 1},
     ]
 
-def add_condition(target, condition):
-    """ Adds a condition to the target. """
-    target.conditions.add(condition)
-
-def remove_condition(target, condition):
-    """ Removes a condition from the target. """
-    target.conditions.discard(condition)
-
 def process_reactions(moving_entity, entities, stats, previous_position):
     """ Checks and triggers opportunity attacks."""
     for entity in entities:
-        if entity == moving_entity or entity.hitpoints <= 0:
+        if entity == moving_entity or entity.hitpoints_current <= 0:
             continue
         
         if entity.can_take_reaction() and entity.position.distance_to(previous_position) <= entity.weapon["range"]:
@@ -236,7 +228,7 @@ def apply_damage(target, damage, damage_type, stats, attacker_name):
         damage = max(1, damage)
 
     # Subtract HP and track stats
-    target.hitpoints = max(target.hitpoints - damage, 0)
+    target.hitpoints_current = max(target.hitpoints_current - damage, 0)
 
     # Ensure stats tracking works
     if attacker_name not in stats["damage_dealt"]:
@@ -246,7 +238,7 @@ def apply_damage(target, damage, damage_type, stats, attacker_name):
     # Track damage per round
     stats["damage_per_round"].setdefault(attacker_name, []).append(damage)
 
-    print(f"DEBUG: {attacker_name} dealt {damage} damage to {target.name}. Remaining HP: {target.hitpoints}")
+    print(f"DEBUG: {attacker_name} dealt {damage} damage to {target.name}. Remaining HP: {target.hitpoints_current}")
 
 def checkTime(characters):
     

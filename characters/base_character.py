@@ -12,7 +12,8 @@ class Character:
         self.initiative = initiative
         self.speed = speed
         self.base_speed = speed
-        self.hitpoints = hitpoints
+        self.hitpoints_maximum = hitpoints
+        self.hitpoints_current = hitpoints
         self.size = size
         self.weapon = weapon
         self.combat_style = combat_style  # "melee" or "ranged"

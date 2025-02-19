@@ -10,13 +10,16 @@ __________
 
 -Redo which stats are tracked and where, as well as reading them later - 5
 
--Integrate Movement in the turn execution - 1
+-Integrate Movement in the turn execution - DONE
 
 -Redo the basic actions available to all characters - 3 (Already half done ?)
 	- Weights assigned per character
 	- Redo the hide mechanic to be simpler - DONE
 
--Redo entirely the attack action and the damage calculation - 2 
+-Redo entirely the attack action and the damage calculation - DONE (Not necessary)
 
 -Integrate flying speed in Position -4
 
+- Redo Process Reactions
+
+- Redo Opportunity attacks
