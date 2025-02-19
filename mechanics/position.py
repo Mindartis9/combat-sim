@@ -5,9 +5,9 @@ class Position:
     """ Represents a character's position in 3D space. """
     
     def __init__(self, x, y, z=0):
-        self.x = max(0, x)# Ensure within grid bounds
+        self.x = max(0, x) # Ensure within grid bounds
         self.y = max(0, y) # Ensure within grid bounds
-        self.z = max(0, z)  # Ensure ground-level or higher
+        self.z = max(0, z) # Ensure ground-level or higher
 
     def move_towards(self, target):
         """Move towards another entity by a given step size"""
@@ -79,7 +79,7 @@ def closest_enemy(entity, enemy_camp):
 def initialize_positions(party, enemies):
     """Initializes positions for entities in both party and enemies only once."""
   
-    def generate_nearby_position(reference_points, min_dist, max_dist):
+    def generate_nearby_position(reference_points, min_dist, max_dist, entity):
         """Generates a position near at least one reference point within the given range."""
         while True:
             ref_point = random.choice(reference_points)
@@ -89,7 +89,7 @@ def initialize_positions(party, enemies):
 
             x = ref_point.x + r * math.sin(phi) * math.cos(theta)
             y = ref_point.y + r * math.sin(phi) * math.sin(theta)
-            z = ref_point.z + r * math.cos(phi)
+            z = ref_point.z + r * math.cos(phi) if entity.is_flying else 0
 
             new_position = Position(round(x), round(y), round(z))
             
@@ -100,14 +100,13 @@ def initialize_positions(party, enemies):
     party_positions = [Position(random.randint(0, 100), random.randint(0, 100), random.randint(0, 100))]
     enemy_positions = [Position(random.randint(200, 300), random.randint(200, 300), random.randint(200, 300))]
     
-    # Assign positions to party members
-    for member in party[1:]:  # First member already has a position
-        party_positions.append(generate_nearby_position(party_positions, 25, 50))
-    
-    # Assign positions to enemies
-    for enemy in enemies[1:]:  # First enemy already has a position
-        enemy_positions.append(generate_nearby_position(enemy_positions, 25, 50))
-    
+    # Assign positions
+    for member in party[1:]:
+        party_positions.append(generate_nearby_position(party_positions, 25, 50, member))
+
+    for enemy in enemies[1:]:
+        enemy_positions.append(generate_nearby_position(enemy_positions, 25, 50, enemy))
+
     # Ensure opposing camps are at least 50 feet apart
     for idx in range(len(enemy_positions)):
         while any(distance(enemy_positions[idx], p) < 50 or distance(enemy_positions[idx], p) > 100 for p in party_positions):

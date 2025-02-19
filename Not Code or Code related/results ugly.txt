@@ -1,28 +1,43 @@
-def regression_analysis(df):
-    """Performs regression analysis to predict combat success."""
-    if "winner" not in df.columns:
-        return None
-    
-    df = df.copy()
-    df["win_binary"] = (df["winner"] == "party").astype(int)
-    
-    predictors = [col for col in df.columns if "damage_dealt" in col or "turns_survived" in col or "initiative" in col]
+def initialize_positions(party, enemies):
+    """Initializes positions for entities in both party and enemies only once."""
+  
+    def generate_nearby_position(reference_points, min_dist, max_dist):
+        """Generates a position near at least one reference point within the given range."""
+        while True:
+            ref_point = random.choice(reference_points)
+            r = random.uniform(min_dist, max_dist)
+            theta = random.uniform(0, 2 * math.pi)
+            phi = random.uniform(0, math.pi)
 
-    predictors = [p for p in predictors if p in df.columns]
-    
-    if not predictors:
-        return {"Error": f"No valid predictors found. Available columns: {df.columns.tolist()}"}
+            x = ref_point.x + r * math.sin(phi) * math.cos(theta)
+            y = ref_point.y + r * math.sin(phi) * math.sin(theta)
+            z = ref_point.z + r * math.cos(phi)
 
+            new_position = Position(round(x), round(y), round(z))
+            
+            if all(distance(new_position, p) >= min_dist for p in reference_points):
+                return new_position
     
-    X = df[predictors].fillna(0)
-    y = df["win_binary"]
+    # Initialize base positions for both parties
+    party_positions = [Position(random.randint(0, 100), random.randint(0, 100), random.randint(0, 100))]
+    enemy_positions = [Position(random.randint(200, 300), random.randint(200, 300), random.randint(200, 300))]
     
-    model = LinearRegression()
-    model.fit(X, y)
+    # Assign positions to party members
+    for member in party[1:]:  # First member already has a position
+        party_positions.append(generate_nearby_position(party_positions, 25, 50))
     
-    coefficients = dict(zip(predictors, model.coef_))
-    return {
-        "Regression Coefficients": coefficients,
-        "Intercept": model.intercept_,
-    }
-
+    # Assign positions to enemies
+    for enemy in enemies[1:]:  # First enemy already has a position
+        enemy_positions.append(generate_nearby_position(enemy_positions, 25, 50))
+    
+    # Ensure opposing camps are at least 50 feet apart
+    for idx in range(len(enemy_positions)):
+        while any(distance(enemy_positions[idx], p) < 50 or distance(enemy_positions[idx], p) > 100 for p in party_positions):
+            enemy_positions[idx] = generate_nearby_position(enemy_positions, 50, 100)
+    
+    # Assign positions to entities
+    for i, member in enumerate(party):
+        member.position = party_positions[i]
+    
+    for i, enemy in enumerate(enemies):
+        enemy.position = enemy_positions[i]
