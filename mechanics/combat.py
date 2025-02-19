@@ -108,7 +108,6 @@ def simulate_combat(entities):
     stats = {
         "winner": None,
         "damage_dealt": {e.name: 0 for e in entities},
-        "damage_per_round": {e.name: [] for e in entities},
         "turns_survived": {e.name: 0 for e in entities},
         "actions_used": {e.name: {} for e in entities},
         "reactions_used": {e.name: {} for e in entities},
@@ -204,10 +203,10 @@ def opportunity_attack(attacker, target, stats):
 def assign_default_actions(character):
     """ Assigns default combat actions to a character. """
     character.actions = [
-        {"name": "Attack", "mechanic": attack, "parameters": {}, "weight": 10, "target_required": True},
-        {"name": "Dodge", "mechanic": dodge, "parameters": {}, "weight": 1},
-        {"name": "Disengage", "mechanic": disengage, "parameters": {}, "weight": 1},
-        {"name": "Dash", "mechanic": dash, "parameters": {}, "weight": 1},
+        {"name": "Attack", "mechanic": attack, "weight": 10, "target_required": True},
+        {"name": "Dodge", "mechanic": dodge, "weight": 1},
+        {"name": "Disengage", "mechanic": disengage, "weight": 1},
+        {"name": "Dash", "mechanic": dash, "weight": 1},
     ]
 
 def process_reactions(moving_entity, entities, stats, previous_position):
@@ -243,9 +242,6 @@ def apply_damage(target, damage, damage_type, stats, attacker_name):
     if attacker_name not in stats["damage_dealt"]:
         stats["damage_dealt"][attacker_name] = 0
     stats["damage_dealt"][attacker_name] += damage
-
-    # Track damage per round
-    stats["damage_per_round"].setdefault(attacker_name, []).append(damage)
 
 def checkTime(characters):
     
