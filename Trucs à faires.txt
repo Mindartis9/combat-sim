@@ -26,3 +26,7 @@ _________________________________________
 - Fix Monte Carlo
 
 - Do Bonus Actions
+
+- Change where the modifier is for weapons
+
+- Integrate the other attributes of weapons 

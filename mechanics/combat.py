@@ -16,7 +16,6 @@ def roll_initiative(entities):
         entity.current_initiative = random.randint(1, 20) + entity.initiative
     return sorted(entities, key=lambda e: e.current_initiative, reverse=True)
 
-
 def determine_surprise(entities, surprised_names):
     """ Marks surprised entities at the start of combat. """
     for entity in entities:
@@ -30,9 +29,6 @@ def execute_turn(entity, entities, stats):
     if "falling" in entity.conditions:
         entity.apply_fall_damage(stats)
         return  # Falling takes priority
-    
-    if entity.hitpoints_current <= 0:
-        return  # Skip dead entities
 
     checkTime(entity)
     stats["turns_survived"][entity.name] += 1
@@ -80,11 +76,11 @@ def execute_turn(entity, entities, stats):
         if action["name"] == "Attack" & valid_targets != []:
             attack(entity, target, stats)
         elif action["name"] == "Dodge":
-            dodge(entity, stats)
+            dodge(entity)
         elif action["name"] == "Disengage":
-            disengage(entity, stats)
+            disengage(entity)
         elif action["name"] == "Dash":
-            dash(entity, stats)
+            dash(entity)
         else:
             action = random.choices(entity.actions, weights=[a.get("weight", 1) for a in entity.actions], k=1)[0]
             triggerstop = False
@@ -111,8 +107,12 @@ def simulate_combat(entities):
         "turns_survived": {e.name: 0 for e in entities},
         "actions_used": {e.name: {} for e in entities},
         "reactions_used": {e.name: {} for e in entities},
+        "initiative_order": {e.name: {} for e in entities},
         "rounds": 0,
     }
+    
+    for entity in entities:
+        stats["initiative_order"][entity.name] = entities.index(entity)
     
     while True:
         stats["rounds"] += 1
@@ -162,21 +162,21 @@ def attack(attacker, target, stats):
 
         apply_damage(target, damage, weapon["damage_type"], stats, attacker.name)
         
-def dodge(character, stats):
+def dodge(character):
     """ Performs the Dodge action, imposing disadvantage on attacks. """
     if 'dodge' not in character.dicoTemporalite:
         character.dicoTemporalite['dodge':[0,0,-1]]
     character.defense_advantage += -1
     character.dicoTemporalite['dodge'][0] = 2
 
-def dash(character, stats):
+def dash(character):
     """ Performs the Dash action, doubling movement speed. """
     if 'dash' not in character.dicoTemporalite:
         character.dicoTemporalite['dash':[0,0,0]]
     character.speed += character.base_speed
     character.dicoTemporalite['dash'][0] = 1
 
-def disengage(character, stats):
+def disengage(character):
     """ Performs the Disengage action, avoiding opportunity attacks. """
     if 'disengage' not in character.dicoTemporalite:
         character.dicoTemporalite['disengage':[0,0,0]]    
