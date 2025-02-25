@@ -73,6 +73,18 @@ enemies[1].resistances = ["piercing"]  # Wyvern resists arrows
 # Assign positions
 initialize_positions(party, enemies)
 
+entities = party + enemies
+
+stats = {
+        "winner": [None, {"combat_nbr": 1}],
+        "damage_dealt": [{e.name: 0 for e in entities}, {"combat_nbr": 1}],
+        "turns_survived": [{e.name: 0 for e in entities}, {"combat_nbr": 1}],
+        "actions_used": [{e.name: {} for e in entities}, {"combat_nbr": 1}],
+        "reactions_used": [{e.name: {} for e in entities}, {"combat_nbr": 1}],
+        "initiative_order": [{e.name: {} for e in entities}, {"combat_nbr": 1}],
+        "rounds": [0, {"combat_nbr": 1}],
+    }
+
 # Run Simulation
 combat_results = run_bulk_simulations(party + enemies, num_simulations=10)
 

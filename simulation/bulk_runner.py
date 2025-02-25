@@ -8,12 +8,12 @@ import matplotlib.pyplot as plt
 import statsmodels.api as sm
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 
-def run_bulk_simulations(entities, num_simulations, debug=False):
+def run_bulk_simulations(entities, num_simulations):
     """Runs multiple combat simulations and aggregates statistics."""
     simulation_results = []
     
     for _ in range(num_simulations):
-        stats = simulate_combat(deepcopy(entities))
+        stats = simulate_combat(deepcopy(entities), stats)
         simulation_results.append(flatten_dict(stats))
     
     df = pd.DataFrame(simulation_results)
@@ -46,13 +46,13 @@ def compute_win_loss_distribution(df):
     
     return party_win_rate, confidence_interval
 
-def compute_damage_statistics(df):
+def compute_damage_statistics(df, entity):
     """Computes damage-related statistics."""
-    damage_columns = [col for col in df.columns if "damage_dealt" in col]
-    if not damage_columns:
+    damage_entity = [entity.name]
+    if not damage_entity:
         return None
     
-    damage_data = df[damage_columns]
+    damage_data = df[damage_entity]
     return {
         "Average Damage Per Round": damage_data.mean(),
         "Total Damage Dealt": damage_data.sum(),
@@ -104,7 +104,21 @@ def compute_movement_statistics(df):
     }
     return {k: v for k, v in movement_data.items() if pd.notna(v)}
 
-def analyze_combat_results(df):
+def analyze_combat_results_per_entity(df):
+    """Runs all statistical analysis on combat simulation results."""
+    if df is None or df.empty:
+        print("DEBUG: No valid data available.")
+        return "No valid data available."
+    
+    return {
+        "Damage Statistics": compute_damage_statistics(df),
+        "Survivability Statistics": compute_survivability_statistics(df),
+        "Action Analysis": compute_action_statistics(df),
+        "Movement Analysis": compute_movement_statistics(df),
+        "Probability Distributions": compute_probability_distributions(df),
+    }
+
+def analyze_combat_results_global(df):
     """Runs all statistical analysis on combat simulation results."""
     if df is None or df.empty:
         print("DEBUG: No valid data available.")
@@ -112,11 +126,6 @@ def analyze_combat_results(df):
     
     return {
         "Win Rate (%)": compute_win_loss_distribution(df),
-        "Damage Statistics": compute_damage_statistics(df),
-        "Survivability Statistics": compute_survivability_statistics(df),
-        "Action Analysis": compute_action_statistics(df),
-        "Movement Analysis": compute_movement_statistics(df),
-        "Probability Distributions": compute_probability_distributions(df),
         "Monte Carlo Analysis": monte_carlo_analysis(df),
         "Regression Analysis": regression_analysis(df),
     }

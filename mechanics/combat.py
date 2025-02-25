@@ -96,20 +96,10 @@ def execute_turn(entity, entities, stats):
     checkTime(entity)
 
 
-def simulate_combat(entities):
+def simulate_combat(entities, stats):
     """ Runs combat simulation until one side is eliminated and collects statistical data. """
     from characters.party_member import PartyMember  
     from characters.enemy import Enemy  
-    
-    stats = {
-        "winner": None,
-        "damage_dealt": {e.name: 0 for e in entities},
-        "turns_survived": {e.name: 0 for e in entities},
-        "actions_used": {e.name: {} for e in entities},
-        "reactions_used": {e.name: {} for e in entities},
-        "initiative_order": {e.name: {} for e in entities},
-        "rounds": 0,
-    }
     
     for entity in entities:
         stats["initiative_order"][entity.name] = entities.index(entity)
