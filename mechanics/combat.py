@@ -116,7 +116,6 @@ def simulate_combat(entities, stats):
 
         alive_party = [e for e in entities if isinstance(e, PartyMember) and e.hitpoints_current > 0]
         alive_enemies = [e for e in entities if isinstance(e, Enemy) and e.hitpoints_current > 0]
-
         if not alive_party:
             return {**stats, "winner": "enemies"}
         if not alive_enemies:
