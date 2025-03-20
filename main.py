@@ -5,6 +5,9 @@ from simulation.bulk_runner import analyze_combat_results, run_bulk_simulations
 import pandas as pd
 from utils.visualization import generate_combat_report
 from mechanics.position import initialize_positions
+import os
+from utils.regressionanalysis import RegressionAnalysis
+from utils.montecarlo import MonteCarloSimulation
 
 # Define weapons as a dictionary for easy access
 WEAPONS = {
@@ -75,26 +78,38 @@ initialize_positions(party, enemies)
 
 entities = party + enemies
 
-stats = {
-        "winner": [None, {"combat_nbr": 1}],
-        "damage_dealt": [{e.name: 0 for e in entities}, {"combat_nbr": 1}],
-        "turns_survived": [{e.name: 0 for e in entities}, {"combat_nbr": 1}],
-        "actions_used": [{e.name: {} for e in entities}, {"combat_nbr": 1}],
-        "reactions_used": [{e.name: {} for e in entities}, {"combat_nbr": 1}],
-        "initiative_order": [{e.name: {} for e in entities}, {"combat_nbr": 1}],
-        "rounds": [0, {"combat_nbr": 1}],
-    }
+# Initialize an empty CSV with the correct parameters
+
+csv_file = "combat_stats.csv"
+
+# Define the structure of the CSV
+columns = [
+    "combat_nbr",
+    "winner",
+    "damage_dealt",
+    "turns_survived",
+    "actions_used",
+    "reactions_used",
+    "initiative_order",
+    "rounds"
+]
+
+# Create the CSV file if it doesn't exist
+if not os.path.exists(csv_file):
+    empty_data = pd.DataFrame(columns=columns)
+    empty_data.to_csv(csv_file, index=False)
+
+# Load the CSV into a dictionary for later use
+stats = pd.read_csv(csv_file).to_dict(orient="list")
 
 # Run Simulation
 combat_results = run_bulk_simulations(party + enemies, num_simulations=10)
 
-# Ensure combat_results is valid
-def validate_results(results):
-    if not isinstance(results, pd.DataFrame) or results.empty:
-        raise ValueError("Simulation returned invalid or empty results.")
-    return results
+analysism = MonteCarloSimulation("data.csv")
+analysism.run_analysis()
 
-combat_results = validate_results(combat_results)
+analysis = RegressionAnalysis("combat_stats.csv")
+analysis.run_analysis()
 
 # Run statistical analysis
 analysis_results = analyze_combat_results(combat_results)
