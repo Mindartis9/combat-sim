@@ -74,7 +74,6 @@ def generate_combat_report(results, output_path):
         })
         
     # Damage Statistics
-    # Damage Statistics
     if "damage_dealt" in results and results["damage_dealt"]:
         add_section("Damage Statistics")
 

@@ -68,7 +68,7 @@ for entity in party + enemies:
     assign_default_actions(entity)
 
 enemies[0].resistances = ["slashing"]  # Orc resists slashing
-enemies[1].resistances = ["piercing"]  # Wyvern resists arrows
+enemies[1].resistances = ["piercing"]  # Wyvern resists piercing
 
 # Assign positions
 initialize_positions(party, enemies)
