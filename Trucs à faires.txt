@@ -19,11 +19,12 @@
 - Redo Opportunity attacks - DONE
 
 - Integrate flying speed in Position - DONE
+
+- Fix Monte Carlo - DONE
+
 _________________________________________
 
 - Redo which stats are tracked and where, as well as reading them later - 5
-
-- Fix Monte Carlo
 
 ----------- Additional stuff to add
 - Do Bonus Actions
