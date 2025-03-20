@@ -105,7 +105,7 @@ stats = pd.read_csv(csv_file).to_dict(orient="list")
 # Run Simulation
 combat_results = run_bulk_simulations(party + enemies, num_simulations=10)
 
-analysism = MonteCarloSimulation("data.csv")
+analysism = MonteCarloSimulation("combat_stats.csv")
 analysism.run_analysis()
 
 analysis = RegressionAnalysis("combat_stats.csv")

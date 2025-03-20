@@ -2,11 +2,9 @@ from copy import deepcopy
 import numpy as np
 import pandas as pd
 import scipy.stats as stats
-from sklearn.linear_model import LinearRegression, LogisticRegression
 from mechanics.combat import simulate_combat
 import matplotlib.pyplot as plt
 import statsmodels.api as sm
-from statsmodels.stats.outliers_influence import variance_inflation_factor
 
 def run_bulk_simulations(entities, num_simulations):
     """Runs multiple combat simulations and aggregates statistics."""
@@ -126,8 +124,6 @@ def analyze_combat_results_global(df):
     
     return {
         "Win Rate (%)": compute_win_loss_distribution(df),
-        "Monte Carlo Analysis": monte_carlo_analysis(df),
-        "Regression Analysis": regression_analysis(df),
     }
 
 def plot_and_save_histogram(data, title, xlabel, output_path):
@@ -166,23 +162,3 @@ def compute_probability_distributions(df):
         plot_and_save_histogram(survival_values, "Turns Survived Distribution", "Turns Survived", "turns_survived_distribution.png")
 
     return stats_dict
-
-def monte_carlo_analysis(df, num_simulations=10):
-    """Performs Monte Carlo analysis on win rates."""
-    if "winner" not in df.columns:
-        return None
-
-    win_rate = (df["winner"] == "party").mean()
-    
-    simulated_win_rates = np.random.binomial(n=num_simulations, p=win_rate, size=num_simulations) / num_simulations
-    ci_lower, ci_upper = np.percentile(simulated_win_rates, [2.5, 97.5])
-
-    # Save histogram for Monte Carlo simulation
-    plot_and_save_histogram(simulated_win_rates * 100, "Monte Carlo Simulated Win Rates", "Win Rate (%)", "monte_carlo_simulation.png")
-
-
-    return {
-        "Estimated Win Rate": round(win_rate * 100, 2),
-        "95% Confidence Interval": (round(ci_lower * 100, 2), round(ci_upper * 100, 2)),
-    }
-
