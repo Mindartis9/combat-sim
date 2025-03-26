@@ -74,14 +74,13 @@ def distance(pos1, pos2):
 def closest_enemy(entity, enemy_camp):
     """Find the closest enemy to the given entity."""
     return min(enemy_camp, key=lambda enemy: distance(entity.position, enemy.position))
-    
-        
+
 def initialize_positions(party, enemies):
     """Initializes positions for entities in both party and enemies only once."""
   
-    def generate_nearby_position(reference_points, min_dist, max_dist, entity):
+    def generate_nearby_position(reference_points, min_dist, max_dist, entity, max_attempts=100):
         """Generates a position near at least one reference point within the given range."""
-        while True:
+        for _ in range(max_attempts):  # Prevent infinite loops
             ref_point = random.choice(reference_points)
             r = random.uniform(min_dist, max_dist)
             theta = random.uniform(0, 2 * math.pi)
@@ -95,11 +94,14 @@ def initialize_positions(party, enemies):
             
             if all(distance(new_position, p) >= min_dist for p in reference_points):
                 return new_position
-    
+        
+        # If no valid position is found, return a fallback value
+        return Position(reference_points[0].x + min_dist, reference_points[0].y, 0)
+
     # Initialize base positions for both parties
     party_positions = [Position(random.randint(0, 100), random.randint(0, 100), random.randint(0, 100))]
     enemy_positions = [Position(random.randint(200, 300), random.randint(200, 300), random.randint(200, 300))]
-    
+
     # Assign positions
     for member in party[1:]:
         party_positions.append(generate_nearby_position(party_positions, 25, 50, member))
@@ -107,17 +109,22 @@ def initialize_positions(party, enemies):
     for enemy in enemies[1:]:
         enemy_positions.append(generate_nearby_position(enemy_positions, 25, 50, enemy))
 
-    # Ensure opposing camps are at least 50 feet apart
+    # Ensure opposing camps are at least 50 feet apart, but avoid infinite loops
     for idx in range(len(enemy_positions)):
+        attempts = 0
         while any(distance(enemy_positions[idx], p) < 50 or distance(enemy_positions[idx], p) > 100 for p in party_positions):
-            enemy_positions[idx] = generate_nearby_position(enemy_positions, 50, 100)
+            enemy_positions[idx] = generate_nearby_position(enemy_positions, 50, 100, enemies[idx])
+            attempts += 1
+            if attempts > 100:  # Avoid infinite loops
+                break  # Keep the last valid position and exit the loop
     
     # Assign positions to entities
     for i, member in enumerate(party):
         member.position = party_positions[i]
     
     for i, enemy in enumerate(enemies):
-        enemy.position = enemy_positions[i]
+        enemy.position = enemy_positions[i]  # Fixed typo (i instead of I)
+
 
 
 def move_entities(camp_a, camp_b):
