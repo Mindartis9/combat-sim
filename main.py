@@ -1,7 +1,7 @@
 from characters.party_member import PartyMember
 from characters.enemy import Enemy
 from mechanics.combat import assign_default_actions
-from simulation.bulk_runner import analyze_combat_results, run_bulk_simulations
+from simulation.bulk_runner import analyze_combat_results_global, run_bulk_simulations, analyze_combat_results_per_entity
 import pandas as pd
 from utils.visualization import generate_combat_report
 from mechanics.position import initialize_positions
@@ -112,6 +112,7 @@ analysis = RegressionAnalysis("combat_stats.csv")
 analysis.run_analysis()
 
 # Run statistical analysis
-analysis_results = analyze_combat_results(combat_results)
+analysis_results1 = analyze_combat_results_per_entity(combat_results)
+analysis_results = analyze_combat_results_global(combat_results)
 
-generate_combat_report(analysis_results, "combat_simulation_report.pdf")
+generate_combat_report(analysis_results1, "combat_simulation_report.pdf")
