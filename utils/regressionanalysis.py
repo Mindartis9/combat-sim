@@ -2,7 +2,6 @@ import pandas as pd
 import numpy as np
 import statsmodels.api as sm
 
-import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 from statsmodels.stats.outliers_influence import variance_inflation_factor
