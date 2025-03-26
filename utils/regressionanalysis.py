@@ -76,6 +76,4 @@ class RegressionAnalysis:
         self.plot_residuals()
         self.generate_pdf_report()
 
-# Example Usage
-# analysis = RegressionAnalysis("data.csv")
-# analysis.run_analysis()
+

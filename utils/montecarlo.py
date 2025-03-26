@@ -62,6 +62,3 @@ class MonteCarloSimulation:
         self.plot_simulation_results()
         self.generate_pdf_report()
 
-# Example Usage
-# analysis = MonteCarloSimulation("data.csv")
-# analysis.run_analysis()
