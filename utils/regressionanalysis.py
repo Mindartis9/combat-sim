@@ -1,8 +1,10 @@
 import pandas as pd
 import numpy as np
 import statsmodels.api as sm
+
+import matplotlib as mpl
 import matplotlib.pyplot as plt
-import seaborn as sns
+
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 from fpdf import FPDF
 
@@ -40,7 +42,8 @@ class RegressionAnalysis:
         """Generates residuals plot."""
         residuals = self.results.resid
         plt.figure(figsize=(8, 6))
-        sns.histplot(residuals, kde=True, bins=30)
+        plt.hist(residuals, bins=30, edgecolor='black', alpha=0.7)
+        plt.axvline(x=0, color='red', linestyle='--', linewidth=1)
         plt.title("Residuals Distribution")
         plt.xlabel("Residuals")
         plt.ylabel("Frequency")
