@@ -9,58 +9,59 @@ class Position:
         self.y = max(0, y) # Ensure within grid bounds
         self.z = max(0, z) # Ensure ground-level or higher
 
-    def move_towards(self, target):
-        """Move towards another entity by a given step size"""
-        # Compute the vector difference
+    def distance_to(self, other: "Position"):
+        """Euclidean distance to another position."""
+        return math.sqrt((self.x - other.x) ** 2 +
+                         (self.y - other.y) ** 2 +
+                         (self.z - other.z) ** 2)
+
+    def move_towards(self, target, speed, min_dist=0):
+        """Move towards another position using a given speed.
+        The entity will stop once it is within `min_dist` of the target.
+        """
         dx = target.x - self.x
         dy = target.y - self.y
         dz = target.z - self.z
-        
-        # Compute the distance to the target
         distance = math.sqrt(dx**2 + dy**2 + dz**2)
-        
-        if distance <= self.weapon["range"]:
+
+        if distance <= min_dist or distance == 0:
             return
-        
-        # Normalize direction
+
+        # normalize direction vector
         dx /= distance
         dy /= distance
         dz /= distance
 
-        # Move by speed
-        self.x += dx * self.speed
-        self.y += dy * self.speed
-        self.z += dz * self.speed
-        
-        # Round the new position
+        move_amount = min(speed, distance - min_dist)
+        self.x += dx * move_amount
+        self.y += dy * move_amount
+        self.z += dz * move_amount
+
         self.x = round(self.x)
         self.y = round(self.y)
         self.z = round(self.z)
 
-    def move_away(self, target):
-        """Move away another entity by a given step size"""
-        # Compute the vector difference
+    def move_away(self, target, speed, min_dist=0):
+        """Move away from another position using a given speed.
+        The entity will stop once it is at least `min_dist` away.
+        """
         dx = self.x - target.x
         dy = self.y - target.y
         dz = self.z - target.z
-        
-        # Compute the distance to the target
         distance = math.sqrt(dx**2 + dy**2 + dz**2)
-        
-        if distance <= self.weapon["range"]:
+
+        if distance <= min_dist or distance == 0:
             return
-        
-        # Normalize direction
+
         dx /= distance
         dy /= distance
         dz /= distance
 
-        # Move by speed
-        self.x += dx * self.speed
-        self.y += dy * self.speed
-        self.z += dz * self.speed
-        
-        # Round the new position
+        move_amount = min(speed, distance - min_dist)
+        self.x += dx * move_amount
+        self.y += dy * move_amount
+        self.z += dz * move_amount
+
         self.x = round(self.x)
         self.y = round(self.y)
         self.z = round(self.z)
@@ -88,6 +89,7 @@ def initialize_positions(party, enemies):
 
             x = ref_point.x + r * math.sin(phi) * math.cos(theta)
             y = ref_point.y + r * math.sin(phi) * math.sin(theta)
+            # allow vertical variation only for flyers
             z = ref_point.z + r * math.cos(phi) if entity.is_flying else 0
 
             new_position = Position(round(x), round(y), round(z))
@@ -98,9 +100,14 @@ def initialize_positions(party, enemies):
         # If no valid position is found, return a fallback value
         return Position(reference_points[0].x + min_dist, reference_points[0].y, 0)
 
-    # Initialize base positions for both parties
-    party_positions = [Position(random.randint(0, 100), random.randint(0, 100), random.randint(0, 100))]
-    enemy_positions = [Position(random.randint(200, 300), random.randint(200, 300), random.randint(200, 300))]
+    # Initialize base positions for both parties.  Ground creatures remain at z=0,
+    # flying creatures may start at a random altitude.
+    def random_pos(x_low, x_high, y_low, y_high, entity):
+        z = random.randint(0, 100) if entity.flying_speed > 0 else 0
+        return Position(random.randint(x_low, x_high), random.randint(y_low, y_high), z)
+
+    party_positions = [random_pos(0, 100, 0, 100, party[0])]
+    enemy_positions = [random_pos(200, 300, 200, 300, enemies[0])]
 
     # Assign positions
     for member in party[1:]:

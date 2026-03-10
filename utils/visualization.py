@@ -69,56 +69,103 @@ def generate_combat_report(results, output_path):
         win_rate, confidence_interval = results["Win Rate (%)"]
         add_section("Win Rate Analysis")
         add_table({
-            "Win Rate": f"{win_rate:.2f}%",
-            "Confidence Interval": f"{confidence_interval[0]:.2f}% - {confidence_interval[1]:.2f}%"
+            "Party Win Rate": f"{win_rate:.2f}%",
+            "95% Confidence Interval": f"{confidence_interval[0]:.2f}% - {confidence_interval[1]:.2f}%"
         })
-        
-    # Damage Statistics
+    # average rounds if provided
+    if "avg_rounds" in results:
+        add_section("Average Rounds per Combat")
+        add_text(str(round(results["avg_rounds"], 2)))
+
+    # Per-entity Metrics
     if "damage_dealt" in results and results["damage_dealt"]:
-        add_section("Damage Statistics")
+        add_section("Damage Statistics (average per simulation)")
+        sorted_damage = {name: round(results["damage_dealt"][name], 2)
+                         for name in sorted(results["damage_dealt"])}
+        add_table(sorted_damage)
 
-        formatted_damage = {name: round(value, 2) for name, value in results["damage_dealt"].items()}
-        add_table(formatted_damage)
-    else:
-        add_text("No damage recorded.")
+    if "avg_damage_per_attack" in results:
+        add_section("Average Damage per Attack")
+        formatted = {name: round(v, 2) for name, v in results["avg_damage_per_attack"].items()}
+        add_table(formatted)
 
-    # Action & Reaction Analysis
+    if "crit_average" in results:
+        add_section("Crits per Entity (avg per sim)")
+        formatted = {name: round(v, 2) for name, v in results["crit_average"].items()}
+        add_table(formatted)
+    if "total_crits_mean" in results:
+        add_text(f"Average total crits per combat: {results['total_crits_mean']:.2f}")
+
+    if "turns_no_damage" in results:
+        add_section("Rounds with No Damage (average)")
+        add_text(str(round(results["turns_no_damage"], 2)))
+
+    if "hp_end" in results:
+        add_section("Average HP Remaining at End")
+        sorted_hp = {name: round(results["hp_end"][name], 2) for name in sorted(results["hp_end"])}
+        add_table(sorted_hp)
+
+    if "turns_survived" in results:
+        add_section("Survivability (average turns survived)")
+        sorted_surv = {name: round(results["turns_survived"][name], 2)
+                       for name in sorted(results["turns_survived"])}
+        add_table(sorted_surv)
+
     if "actions_used" in results and results["actions_used"]:
-        add_section("Action & Reaction Analysis")
-
-        for entity, actions in results["actions_used"].items():
+        add_section("Action Usage (average per simulation)")
+        for entity in sorted(results["actions_used"]):
             add_section(f"Entity: {entity}")
-            formatted_actions = {action: count for action, count in actions.items()}
+            formatted_actions = {action: round(count, 2)
+                                 for action, count in results["actions_used"][entity].items()}
             add_table(formatted_actions)
-    else:
-        add_text("No action data recorded.")
 
-        # Monte Carlo Analysis
-        if "Monte Carlo Analysis" in results and results["Monte Carlo Analysis"]:
-            add_section("Monte Carlo Analysis")
-            
-            monte_carlo_fixed = {}
-            for k, v in results["Monte Carlo Analysis"].items():
-                if isinstance(v, tuple):  # Handle tuple confidence intervals
-                    monte_carlo_fixed[str(k)] = f"({round(float(v[0]), 2)}, {round(float(v[1]), 2)})"
-                else:
-                    monte_carlo_fixed[str(k)] = round(float(v), 2)
+    if "Movement Analysis" in results and results["Movement Analysis"]:
+        add_section("Movement Analysis")
+        add_table(results["Movement Analysis"])
 
-            add_table(monte_carlo_fixed)
-            add_image("monte_carlo_simulation.png")
+    if "Probability Distributions" in results and results["Probability Distributions"]:
+        add_section("Probability Distributions")
+        for key, val in results["Probability Distributions"].items():
+            add_section(key)
+            # survival curve doesn't print raw data long-form
+            if key == "Survival Curve":
+                add_text("See survival curve plot below for entity life percentages over rounds.")
+            elif isinstance(val, dict):
+                add_table(val)
+        # include histogram images if generated
+        for img in ["damage_distribution.png", "turns_survived_distribution.png", "rounds_distribution.png", "survival_curve.png"]:
+            add_image(img)
 
-    
+    # Monte Carlo Analysis
+    if "Monte Carlo Analysis" in results and results["Monte Carlo Analysis"]:
+        add_section("Monte Carlo Simulation Summary")
+        monte_carlo_fixed = {}
+        for k, v in results["Monte Carlo Analysis"].items():
+            # identify metrics that represent percentages so we can append a '%' sign
+            is_pct = "%" in str(k) or "Win" in str(k)
+            if isinstance(v, tuple):  # Handle tuple confidence intervals
+                formatted = f"({round(float(v[0]), 2)}, {round(float(v[1]), 2)})"
+                if is_pct:
+                    # apply % to both endpoints
+                    formatted = f"({round(float(v[0]), 2)}%, {round(float(v[1]), 2)}%)"
+                monte_carlo_fixed[str(k)] = formatted
+            else:
+                val = round(float(v), 2)
+                monte_carlo_fixed[str(k)] = f"{val}%" if is_pct else val
+        add_table(monte_carlo_fixed)
+        add_image("monte_carlo_plot.png")
+
     # Regression Analysis
     if "Regression Analysis" in results and results["Regression Analysis"]:
-        add_section("Regression Analysis")
-    
-        for entity, coeffs in results["Regression Analysis"].items():
+        add_section("Regression Analysis Results")
+        for entity in sorted(results["Regression Analysis"]):
+            coeffs = results["Regression Analysis"][entity]
             if isinstance(coeffs, dict):  # Ensure coefficients are formatted properly
                 add_section(f"{entity} Coefficients")
                 formatted_coeffs = {str(k): round(float(v), 4) for k, v in coeffs.items()}
                 add_table(formatted_coeffs)
             else:
                 add_table({entity: round(float(coeffs), 4)})
-                
+
    # Save PDF
     pdf.output(output_path)

@@ -18,7 +18,8 @@ class Character:
         self.weapon = weapon
         self.combat_style = combat_style  # "melee" or "ranged"
         self.flying_speed = flying_speed  # Default to 0 if ground-bound
-        self.is_flying = False  # Default ground state
+        # creatures with a flying speed are assumed airborne
+        self.is_flying = flying_speed > 0
         self.attack_advantage = 0  # Tracks if attacks made by this character have advantage/disadvantage
         self.defense_advantage = 0  # Tracks if attacks against this character have advantage/disadvantage
         
@@ -41,8 +42,14 @@ class Character:
         return not self.has_used_reaction and not self.is_surprised 
     
     def start_falling(self):
-        """Starts falling if airborne without flying speed."""
-        if self.position.z > 0 and self.flying_speed == 0:
+        """Starts falling if airborne and not currently flying.
+
+        Previously the check required zero flying_speed, which meant that a
+        creature that lost the ability to fly (is_flying set False) would not
+        be marked as falling.  The essential requirement is simply that the
+        character is above ground and not airborne under their own power.
+        """
+        if self.position.z > 0 and not getattr(self, 'is_flying', False):
             self.conditions.add("falling")
             self.fall_distance = 0  # Reset fall distance
 
@@ -54,7 +61,8 @@ class Character:
         self.fall_distance = min(self.fall_distance + 500, self.position.z)
         if self.position.z - self.fall_distance <= 0:
             fall_damage = (self.fall_distance // 10) * random.randint(1, 6)  # 1d6 per 10 ft
-            self._current = max(self.hitpoints_current - fall_damage, 0)
+            # subtract from current hit points
+            self.hitpoints_current = max(self.hitpoints_current - fall_damage, 0)
             stats["damage_dealt"].setdefault(self.name, 0)
             stats["damage_dealt"][self.name] += fall_damage
             self.conditions.discard("falling")
@@ -62,19 +70,33 @@ class Character:
             self.position.z = 0
 
     def move_towards_target(self, target):
-        """Moves towards the target if out of melee range."""
+        """Moves towards the target if out of melee range.
+
+        The character will stop once it is within weapon range of the target so
+        it does not accidentally move _through_ the opponent.
+        """
         if self.combat_style == "melee" and self.position.distance_to(target.position) > self.weapon["range"]:
-            self.position.move_towards(target.position, self.flying_speed if self.is_flying else self.speed)
+            self.position.move_towards(
+                target.position,
+                self.flying_speed if self.is_flying else self.speed,
+                min_dist=self.weapon["range"],
+            )
 
     def move_away_from_target(self, target):
         """Moves away from the target if ranged."""
         if self.combat_style == "ranged":
-            self.position.move_away(target.position, self.speed, max(self.weapon["range"] - self.speed, 5))
+            self.position.move_away(
+                target.position,
+                self.flying_speed if self.is_flying else self.speed,
+                max(self.weapon["range"] - self.speed, 5),
+            )
 
     def start_flying(self):
         """Enables flying movement if possible."""
-        self.is_flying = self.flying_speed > 0
-        if not self.is_flying:
+        if self.flying_speed > 0:
+            self.is_flying = True
+        else:
+            # if we attempt to fly but have no speed, we fall if above ground
             self.start_falling()
 
     def calculate_modifier(self, ability: str) -> int:

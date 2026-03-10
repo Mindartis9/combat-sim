@@ -70,49 +70,68 @@ enemies = [
 for entity in party + enemies:
     assign_default_actions(entity)
 
-enemies[0].resistances = ["slashing"]  # Orc resists slashing
-enemies[1].resistances = ["piercing"]  # Wyvern resists piercing
+enemies[0].resistances = {"slashing"}  # Orc resists slashing
+enemies[1].resistances = {"piercing"}  # Wyvern resists piercing
 
 # Assign positions
 initialize_positions(party, enemies)
 
 entities = party + enemies
 
-# Initialize an empty CSV with the correct parameters
-
+# CSV file used for persistent tracking and later statistical modules
 csv_file = "combat_stats.csv"
 
-# Define the structure of the CSV
-columns = [
-    "combat_nbr",
-    "winner",
-    "damage_dealt",
-    "turns_survived",
-    "actions_used",
-    "reactions_used",
-    "initiative_order",
-    "rounds"
-]
-
-# Create the CSV file if it doesn't exist
-if not os.path.exists(csv_file):
-    empty_data = pd.DataFrame(columns=columns)
-    empty_data.to_csv(csv_file, index=False)
-
-# Load the CSV into a dictionary for later use
-stats = pd.read_csv(csv_file).to_dict(orient="list")
-
 # Run Simulation
-combat_results = run_bulk_simulations(party + enemies, num_simulations=10)
+combat_results = run_bulk_simulations(party + enemies, num_simulations=100)
 
-analysism = MonteCarloSimulation("combat_stats.csv")
-analysism.run_analysis()
+# Persist the results so Monte Carlo / regression can operate on them
+if combat_results is not None and not combat_results.empty:
+    # drop columns that are entirely NaN before saving
+    combat_results = combat_results.dropna(axis=1, how='all')
 
-analysis = RegressionAnalysis("combat_stats.csv")
-analysis.run_analysis()
+    # add combat number column if absent
+    if "combat_nbr" not in combat_results.columns:
+        combat_results.insert(0, "combat_nbr", range(1, len(combat_results) + 1))
 
-# Run statistical analysis
+    # helper to load and clean previous file
+    def _load_clean(path):
+        if not os.path.exists(path) or os.path.getsize(path) == 0:
+            return pd.DataFrame()
+        df = pd.read_csv(path)
+        if 'winner' in df.columns:
+            # keep only valid string winners
+            df = df[df['winner'].isin(['party', 'enemies'])]
+        return df
+
+    existing = _load_clean(csv_file)
+    if existing.empty:
+        combat_results.to_csv(csv_file, index=False)
+    else:
+        combined = pd.concat([existing, combat_results], ignore_index=True)
+        # again drop any empty columns after combining
+        combined = combined.dropna(axis=1, how='all')
+        combined.to_csv(csv_file, index=False)
+
+# run statistical analyses using the updated CSV
+analysism = MonteCarloSimulation(csv_file)
+mc_summary = analysism.run_analysis()
+
+analysis = RegressionAnalysis(csv_file)
+reg_summary = analysis.run_analysis()
+
+# Run statistical analysis for this batch of simulations
 analysis_results1 = analyze_combat_results_per_entity(combat_results)
 analysis_results = analyze_combat_results_global(combat_results)
 
-generate_combat_report(analysis_results1, "combat_simulation_report.pdf")
+# combine everything for the master PDF
+combined_results = {}
+if isinstance(analysis_results1, dict):
+    combined_results.update(analysis_results1)
+if isinstance(analysis_results, dict):
+    combined_results.update(analysis_results)
+if mc_summary:
+    combined_results["Monte Carlo Analysis"] = mc_summary
+if reg_summary:
+    combined_results["Regression Analysis"] = reg_summary
+
+generate_combat_report(combined_results, "combat_simulation_report.pdf")
