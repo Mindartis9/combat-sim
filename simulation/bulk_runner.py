@@ -6,43 +6,52 @@ from mechanics.combat import simulate_combat
 import matplotlib.pyplot as plt
 import statsmodels.api as sm
 
+# Global variable to store spell effectiveness data from simulations
+_last_spell_effectiveness_data = []
 
 def _initialize_stats(entities):
-    """Create a fresh statistics dictionary for a new combat.
-
-    The structure mirrors what simulate_combat expects and what the
-    analysis functions later flatten.
-    """
+    """Create a fresh statistics dictionary for a new combat."""
     return {
         "damage_dealt": {},
-        "attack_count": {},              # number of attack rolls made by each entity
-        "crit_count": {},                # number of critical hits per entity
-        "total_crits": 0,                # overall crits in this combat
+        "attack_count": {},
+        "crit_count": {},
+        "total_crits": 0,
         "turns_survived": {e.name: 0 for e in entities},
         "actions_used": {},
         "reactions_used": {},
+        "spells_cast": {},
+        "spell_effectiveness": [],
         "initiative_order": {},
         "rounds": 0,
-        "turns_no_damage": 0,           # rounds where no damage was dealt
-        "hp_end": {},                    # hit points remaining after combat ends
-        # auxiliary field used during a round
+        "turns_no_damage": 0,
+        "hp_end": {},
         "damage_this_round": 0,
     }
 
-
 def run_bulk_simulations(entities, num_simulations):
     """Runs multiple combat simulations and aggregates statistics."""
+    global _last_spell_effectiveness_data
+    _last_spell_effectiveness_data = []
+
     simulation_results = []
-    
+
     for _ in range(num_simulations):
         stats = _initialize_stats(entities)
         result = simulate_combat(deepcopy(entities), stats)
-        # simulate_combat returns the final stats dictionary
-        simulation_results.append(flatten_dict(result))
-    
+
+        if "spell_effectiveness" in result:
+            _last_spell_effectiveness_data.extend(result["spell_effectiveness"])
+
+        flattened = flatten_dict(result)
+        flattened.pop("spell_effectiveness", None)
+        simulation_results.append(flattened)
+
     df = pd.DataFrame(simulation_results)
-    
     return df if not df.empty else None
+
+def get_spell_effectiveness_data():
+    """Returns the spell effectiveness data from the last run_bulk_simulations call."""
+    return _last_spell_effectiveness_data
 
 def flatten_dict(d, parent_key='', sep='_'):
     """Flattens a nested dictionary for easier DataFrame conversion."""
@@ -133,6 +142,66 @@ def compute_action_statistics(df):
         stats_dict["Reaction Usage Rate"] = df[reaction_columns].mean()
     
     return stats_dict
+
+def compute_spell_effectiveness(spell_effectiveness_data):
+    """Analyze and report on spell effectiveness across simulations.
+    
+    Args:
+        spell_effectiveness_data: List of spell effect records from stats
+    
+    Returns:
+        Dictionary with spell effectiveness metrics
+    """
+    if not spell_effectiveness_data:
+        return {}
+    
+    spell_stats = {}
+    
+    for effect in spell_effectiveness_data:
+        spell_name = effect.get('spell', 'Unknown')
+        effect_type = effect.get('effect_type', 'unknown')
+        success = effect.get('success', False)
+        amount = effect.get('amount', 0)
+        caster = 'Unknown'  # Will be enhanced if available
+        
+        key = f"{spell_name}"
+        if key not in spell_stats:
+            spell_stats[key] = {
+                'casts': 0,
+                'successful_casts': 0,
+                'total_damage': 0,
+                'total_healing': 0,
+                'total_resurrections': 0,
+                'damage_casts': 0,
+                'healing_casts': 0,
+                'resurrection_casts': 0,
+            }
+        
+        spell_stats[key]['casts'] += 1
+        
+        if success:
+            spell_stats[key]['successful_casts'] += 1
+            if effect_type == 'damage':
+                spell_stats[key]['total_damage'] += amount
+                spell_stats[key]['damage_casts'] += 1
+            elif effect_type == 'healing':
+                spell_stats[key]['total_healing'] += amount
+                spell_stats[key]['healing_casts'] += 1
+            elif effect_type == 'resurrection':
+                spell_stats[key]['total_resurrections'] += 1
+                spell_stats[key]['resurrection_casts'] += 1
+            elif effect_type == 'damage_and_condition':
+                spell_stats[key]['total_damage'] += amount
+                spell_stats[key]['damage_casts'] += 1
+    
+    # Calculate effectiveness metrics
+    for spell_name, stats in spell_stats.items():
+        stats['success_rate'] = (stats['successful_casts'] / stats['casts'] * 100) if stats['casts'] > 0 else 0
+        stats['avg_damage_per_cast'] = (stats['total_damage'] / stats['damage_casts']) if stats['damage_casts'] > 0 else 0
+        stats['avg_healing_per_cast'] = (stats['total_healing'] / stats['healing_casts']) if stats['healing_casts'] > 0 else 0
+        stats['avg_damage_when_hit'] = (stats['total_damage'] / stats['casts']) if stats['casts'] > 0 else 0
+    
+    return spell_stats
 
 def compute_movement_statistics(df):
     """Computes movement-related statistics."""

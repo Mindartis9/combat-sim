@@ -143,6 +143,14 @@ def execute_turn(entity, entities, stats):
         elif action["name"] == "Dash":
             dash(entity)
             break
+        elif action["name"] == "Magic":
+            if target is not None:
+                magic(entity, target, stats)
+                break
+            else:
+                # pick another action if no valid target
+                action = random.choices(entity.actions, weights=[a.get("weight", 1) for a in entity.actions], k=1)[0]
+                continue
         else:
             action = random.choices(entity.actions, weights=[a.get("weight", 1) for a in entity.actions], k=1)[0]
             continue
@@ -151,30 +159,6 @@ def execute_turn(entity, entities, stats):
         # always check reactions from all other entities
         process_reactions(entity, entities, stats, prev_position)
             
-    action = random.choices(entity.actions, weights=[a.get("weight", 1) for a in entity.actions], k=1)[0]
-    # Perform action, ensure attack has a target
-    while True:
-        if action["name"] == "Attack":
-            if target is not None:
-                attack(entity, target, stats)
-                break
-            else:
-                # pick another action if no valid target
-                action = random.choices(entity.actions, weights=[a.get("weight", 1) for a in entity.actions], k=1)[0]
-                continue
-        elif action["name"] == "Dodge":
-            dodge(entity)
-            break
-        elif action["name"] == "Disengage":
-            disengage(entity)
-            break
-        elif action["name"] == "Dash":
-            dash(entity)
-            break
-        else:
-            action = random.choices(entity.actions, weights=[a.get("weight", 1) for a in entity.actions], k=1)[0]
-            continue
-
     # Ensure actions are properly tracked
     if entity.name not in stats["actions_used"]:
         stats["actions_used"][entity.name] = {}
@@ -203,9 +187,6 @@ def simulate_combat(entities, stats):
         stats["damage_this_round"] = 0
 
         entities = [e for e in entities if e.hitpoints_current > 0]  # Remove dead entities
-
-        if not entities:
-            break  # If no entities left, combat ends
 
         # record survival at start of round (optional)
         for name in original_names:
@@ -293,6 +274,23 @@ def disengage(character):
     character.can_be_opportunity_attacked = False
     character.dicoTemporalite['disengage'][0] = 1
 
+def magic(character, target, stats):
+    """ Performs the Magic action, casting a random spell at the target. """
+    if not hasattr(character, 'can_cast_spells') or not character.can_cast_spells():
+        return  # Not a spellcaster
+    
+    # Choose a random spell from known/prepared spells
+    available_spells = getattr(character, 'prepared_spells', []) + getattr(character, 'known_spells', [])
+    if not available_spells:
+        # Default to a basic cantrip if no spells known
+        available_spells = ['fire bolt', 'shocking grasp', 'acid splash']
+    
+    spell_name = random.choice(available_spells)
+    
+    # Import and cast spell
+    from mechanics.spells import cast_spell
+    cast_spell(character, spell_name, target, stats)
+
 def opportunity_attack(attacker, target, stats):
     """Executes an opportunity attack when a target moves out of melee range."""
     if attacker.combat_style != "melee" or attacker.has_used_reaction:
@@ -318,6 +316,10 @@ def assign_default_actions(character):
         {"name": "Disengage", "mechanic": disengage, "weight": 1},
         {"name": "Dash", "mechanic": dash, "weight": 1},
     ]
+    
+    # Add Magic action for spellcasters
+    if hasattr(character, 'can_cast_spells') and character.can_cast_spells():
+        character.actions.append({"name": "Magic", "mechanic": magic, "weight": 50, "target_required": True})
 
 def process_reactions(moving_entity, entities, stats, previous_position):
     """ Checks and triggers opportunity attacks."""
